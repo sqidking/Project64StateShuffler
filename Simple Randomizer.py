@@ -15,11 +15,10 @@ SAVE_STATES = 4  # Number of save_states to cycle between up to 9
 MINIMUM_WAIT = 2  # Minimum time before changing save states
 MAXIMUM_WAIT = 25  # Maximum wait time before changing save states
 MODE = 'random'  # random or sequential(default)
-SPACEBAR_COOLDOWN = 2  # Number of seconds after a state switch where pressing space will remove the previous state
+SPACEBAR_COOLDOWN = 2  # Number of seconds after a state switch where pressing space won't do anything
 
 def complete_state(keyb):
-    # Pressing space will remove the current state from rotation...
-    # Hopefully you don't press it right as it's switching. It doesn't have a buffer
+    # Pressing space will remove the current state from rotation
     global finished_list, last_spacebar, manual_complete, SPACEBAR_COOLDOWN
     # Prevent pressing space multiple times messing things up and swapping too fast
     if time.time() - last_spacebar >= SPACEBAR_COOLDOWN and time.time() - last_swap > 1:
@@ -108,4 +107,4 @@ while len(finished_list) < SAVE_STATES & running:
 if running:
     print('You did it!')
 else:
-    print('Goodbye')
+    print('You gave up! :(')

@@ -1,5 +1,4 @@
 import time
-import threading
 import random
 import keyboard
 
@@ -43,7 +42,6 @@ def random_wait(min,max):
             manual_complete = False
             break
     if running == True:  # just prevent this thread from printing after exit
-        print("timer finished")
         timer_complete = True
 
 
@@ -101,6 +99,7 @@ while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
 
 # It will move into this loop when 1 state is left to prevent it from doing dumb stuff
 while len(finished_list) < SAVE_STATES & running:
+    print('Last State!')
     time.sleep(.1)
 
 

@@ -2,7 +2,7 @@ import time
 import random
 import keyboard
 from OBS_Websockets import OBSWebsocketsManager
-from stopwatch import Stopwatch  # using stopwatch from py-stopwatch
+from stopwatch import Stopwatch  # uses the py-stopwatch package
 
 
 # Instructions: Create your save states in advance and saved to a backup folder for future use
@@ -122,7 +122,7 @@ while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
 # It will move into this loop when 1 state is left to prevent it from doing dumb stuff, this loop will handle
 # the timer after the last random_wait until they press space for the last time
 print('Last State!')
-while len(finished_list) < SAVE_STATES & running:
+while (len(finished_list) < SAVE_STATES) & running:
     time.sleep(.1)
     timers[state].tick()
     if USING_OBS_WEBSOCKETS:

@@ -1,6 +1,9 @@
 import time
 import random
 import keyboard
+from OBS_Websockets import OBSWebsocketsManager
+from stopwatch import Stopwatch  # using stopwatch from py-stopwatch
+
 
 # Instructions: Create your save states in advance and saved to a backup folder for future use
 #               Make sure to have Project64 in focus before pressing enter
@@ -15,6 +18,8 @@ MINIMUM_WAIT = 2  # Minimum time before changing save states
 MAXIMUM_WAIT = 25  # Maximum wait time before changing save states
 MODE = 'random'  # random or sequential(default)
 SPACEBAR_COOLDOWN = 2  # Number of seconds after a state switch where pressing space won't do anything
+USING_OBS_WEBSOCKETS = True  # Whether program should display the # of remaining races in OBS
+OBS_TEXT_SOURCE = "Timer_Box"  # Name this whatever text element you want to update in OBS
 
 def complete_state(keyb):
     # Pressing space will remove the current state from rotation
@@ -32,17 +37,24 @@ def exit_program(keyb):
     running = False
 
 def random_wait(min,max):
-    global state, running, timer_complete, manual_complete
+    global state, running, timer_complete, manual_complete, timers, multiple_slots_remain
     wait_time = random.randrange(min, max + 1)  # Determine random wait time
     print("You have %d seconds! Good Luck" % wait_time)
     waits = wait_time * 10
     for i in range(waits):
         time.sleep(0.1)
+        if USING_OBS_WEBSOCKETS:
+            timers[state].tick()
+            m, s = divmod(timers[state].time_active, 60)
+            h, m = divmod(m, 60)
+            obswebsockets_manager.set_text(OBS_TEXT_SOURCE, f"Timer: {h:.0f}:{m:.0f}:{s:.2f}")
         if not running or manual_complete:
             manual_complete = False
             break
     if running == True:  # just prevent this thread from printing after exit
         timer_complete = True
+    if multiple_slots_remain:
+        timers[state].pause()
 
 
 ##########################################################
@@ -62,10 +74,13 @@ state = 1  # initial state
 first_call = True
 multiple_slots_remain = True
 manual_complete = False
+timers = {}
 
 keyboard.on_press_key('space', complete_state)
 keyboard.on_press_key('esc', exit_program)
 
+if USING_OBS_WEBSOCKETS:
+    obswebsockets_manager = OBSWebsocketsManager()
 
 while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
     if not first_call:
@@ -89,6 +104,13 @@ while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
     print("New State: %d" % state)
     time.sleep(.1)
     keyboard.press('f7')
+
+    # Start or Resume Timer
+    if state in timers:
+        timers[state].resume()
+    else:
+        timers[state] = Stopwatch()
+        timers[state].start()
     last_swap = time.time()
 
     # Timer
@@ -97,11 +119,16 @@ while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
 
     first_call = False
 
-# It will move into this loop when 1 state is left to prevent it from doing dumb stuff
+# It will move into this loop when 1 state is left to prevent it from doing dumb stuff, this loop will handle
+# the timer after the last random_wait until they press space for the last time
+print('Last State!')
 while len(finished_list) < SAVE_STATES & running:
-    print('Last State!')
     time.sleep(.1)
-
+    timers[state].tick()
+    if USING_OBS_WEBSOCKETS:
+        m, s = divmod(timers[state].time_active, 60)
+        h, m = divmod(m, 60)
+        obswebsockets_manager.set_text(OBS_TEXT_SOURCE, f"Timer: {h:.0f}:{m:.0f}:{s:.2f}")
 
 if running:
     print('You did it!')

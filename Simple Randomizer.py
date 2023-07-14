@@ -1,4 +1,6 @@
 import time
+from time import gmtime
+from time import strftime
 import random
 import keyboard
 from OBS_Websockets import OBSWebsocketsManager
@@ -80,6 +82,7 @@ while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
         keyboard.press('f5')  # Save the current state - skip this first time around
         time.sleep(.1)
 
+    first_call = False
     keyboard.press(str(state))  # Switch to new state
     print("New State: %d" % state)
     time.sleep(.1)
@@ -93,46 +96,34 @@ while (len(finished_list) < SAVE_STATES) & running & multiple_slots_remain:
         timers[state].start()
     last_swap = time.time()
 
-    wait_time = random.randrange(MINIMUM_WAIT, MAXIMUM_WAIT + 1)  # Determine random wait time
-    print("You have %d seconds! Good Luck" % wait_time)
-    waits = wait_time * 10
-    for i in range(waits):
-        time.sleep(0.1)
-        if USING_OBS_WEBSOCKETS:
-            timers[state].tick()
-            m, s = divmod(timers[state].time_active, 60)
-            h, m = divmod(m, 60)
-            if h == 0:
-                obswebsockets_manager.set_text(OBS_TEXT_SOURCE, f"{m:.0f}:{s:.2f}")
-            else:
-                obswebsockets_manager.set_text(OBS_TEXT_SOURCE, f"{h:.0f}:{m:.0f}:{s:.2f}")
-        if not running or manual_complete:
-            manual_complete = False
-            break
     if multiple_slots_remain:
+        wait_time = random.randrange(MINIMUM_WAIT, MAXIMUM_WAIT + 1)  # Determine random wait time
+        print("You have %d seconds! Good Luck" % wait_time)
+        waits = wait_time * 10
+        for i in range(waits):
+            time.sleep(0.1)
+            if USING_OBS_WEBSOCKETS:
+                timers[state].tick()
+                formatted_time = strftime("%H:%M:%S", gmtime(timers[state].time_active))
+                obswebsockets_manager.set_text(OBS_TEXT_SOURCE, formatted_time)
+            if not running or manual_complete:
+                manual_complete = False
+                break
         timers[state].pause()
+    else:
+        print('Last State!')
 
-    first_call = False
 
 # It will move into this loop when 1 state is left to prevent it from doing dumb stuff, this loop will handle
 # the timer after the last random_wait until they press space for the last time
-print('Last State!')
-
 while (len(finished_list) < SAVE_STATES) & running:
     time.sleep(.1)
     timers[state].tick()
     if USING_OBS_WEBSOCKETS:
-        m, s = divmod(timers[state].time_active, 60)
-        h, m = divmod(m, 60)
-        obswebsockets_manager.set_text(OBS_TEXT_SOURCE, f"{h:.0f}:{m:.0f}:{s:.2f}")
+        formatted_time = strftime("%H:%M:%S", gmtime(timers[state].time_active))
+        obswebsockets_manager.set_text(OBS_TEXT_SOURCE, formatted_time)
 for i in range(SAVE_STATES):
-    timers[i+1].tick()
-    m, s = divmod(timers[i+1].time_active, 60)
-    h, m = divmod(m, 60)
-    if h == 0:
-        print(f"{m:.0f}:{s:.2f}")
-    else:
-        print(f"{h:.0f}:{m:.0f}:{s:.2f}")
+    print(strftime("%H:%M:%S", gmtime(timers[i+1].time_active)))
 
 if running:
     print('You did it!')
